@@ -1,0 +1,140 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class RegistrationForm extends JFrame {
+    // Swing components
+    private JTextField nameField, mobileField, dobField, addressField;
+    private JRadioButton maleButton, femaleButton;
+    private JCheckBox termsCheckBox;
+    private JButton registerButton, exitButton;
+    private JTextArea displayArea;
+
+    // Database connection details
+    private final String DB_URL = "jdbc:mysql://localhost:3306/your_database";
+    private final String USER = "your_username";
+    private final String PASS = "your_password";
+
+    public RegistrationForm() {
+        setTitle("Registration Form");
+        setSize(600, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        // Set up the form layout
+        JPanel panel = new JPanel(new GridLayout(7, 2));
+        JLabel nameLabel = new JLabel("Name:");
+        JLabel mobileLabel = new JLabel("Mobile:");
+        JLabel genderLabel = new JLabel("Gender:");
+        JLabel dobLabel = new JLabel("DOB:");
+        JLabel addressLabel = new JLabel("Address:");
+        JLabel termsLabel = new JLabel("Accept terms and conditions:");
+
+        nameField = new JTextField();
+        mobileField = new JTextField();
+        dobField = new JTextField();
+        addressField = new JTextField();
+
+        maleButton = new JRadioButton("Male");
+        femaleButton = new JRadioButton("Female");
+        ButtonGroup genderGroup = new ButtonGroup();
+        genderGroup.add(maleButton);
+        genderGroup.add(femaleButton);
+
+        termsCheckBox = new JCheckBox();
+
+        panel.add(nameLabel);
+        panel.add(nameField);
+        panel.add(mobileLabel);
+        panel.add(mobileField);
+        panel.add(genderLabel);
+        panel.add(maleButton);
+        panel.add(new JLabel(""));
+        panel.add(femaleButton);
+        panel.add(dobLabel);
+        panel.add(dobField);
+        panel.add(addressLabel);
+        panel.add(addressField);
+        panel.add(termsLabel);
+        panel.add(termsCheckBox);
+
+        registerButton = new JButton("Register");
+        exitButton = new JButton("Exit");
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(registerButton);
+        buttonPanel.add(exitButton);
+
+        displayArea = new JTextArea(10, 30);
+        displayArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(displayArea);
+
+        add(panel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+        add(scrollPane, BorderLayout.EAST);
+
+        registerButton.addActionListener(e -> registerUser());
+        exitButton.addActionListener(e -> System.exit(0));
+    }
+
+    private void registerUser() {
+        String name = nameField.getText();
+        String mobile = mobileField.getText();
+        String dob = dobField.getText();
+        String address = addressField.getText();
+        String gender = maleButton.isSelected() ? "Male" : "Female";
+
+        if (!termsCheckBox.isSelected()) {
+            JOptionPane.showMessageDialog(this, "You must accept the terms and conditions", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Store the user details in the database
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+             PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (name, mobile, gender, dob, address) VALUES (?, ?, ?, ?, ?)")) {
+
+            pstmt.setString(1, name);
+            pstmt.setString(2, mobile);
+            pstmt.setString(3, gender);
+            pstmt.setString(4, dob);
+            pstmt.setString(5, address);
+
+            int rowsInserted = pstmt.executeUpdate();
+            if (rowsInserted > 0) {
+                JOptionPane.showMessageDialog(this, "Registration successful");
+                displayUserData();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error storing user data", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void displayUserData() {
+        try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM users")) {
+
+            displayArea.setText("");
+            while (rs.next()) {
+                displayArea.append("ID: " + rs.getInt("id") + "\n");
+                displayArea.append("Name: " + rs.getString("name") + "\n");
+                displayArea.append("Gender: " + rs.getString("gender") + "\n");
+                displayArea.append("Address: " + rs.getString("address") + "\n");
+                displayArea.append("Contact: " + rs.getString("mobile") + "\n");
+                displayArea.append("DOB: " + rs.getString("dob") + "\n");
+                displayArea.append("\n");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error fetching user data", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new RegistrationForm().setVisible(true);
+        });
+    }
+}
