@@ -1,1 +1,1 @@
-# Java-program-cat-2
+This project is a [brief description of the program, e.g., "simple application for managing and storing details in a database"]. It provides functionalities to add, update, delete, and retrieve records from the database.
